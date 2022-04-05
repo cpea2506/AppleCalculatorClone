@@ -7,6 +7,18 @@
 
 import SwiftUI
 
+extension Double {
+    func removeTraillingZeros() -> String {
+        let formatter = NumberFormatter()
+
+        formatter.minimumIntegerDigits = 1
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 8
+
+        return String(formatter.string(from: NSNumber(value: self))!)
+    }
+}
+
 // MARK: - KeyColor
 
 /// A type represents for calculator keys color

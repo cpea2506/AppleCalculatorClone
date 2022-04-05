@@ -62,9 +62,7 @@ struct ContentView: View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
             VStack {
-                Spacer()
-
-                // Result display
+                Spacer() // Result display
                 HStack {
                     Spacer()
                     Text(result)
@@ -79,12 +77,8 @@ struct ContentView: View {
                         ForEach(row, id: \.self) { key in
                             KeyButton(label: key, didTap: key == currentKey) {
                                 currentKey = key
-                                result = key.rawValue
                                 buttons[0][0] = .clear
-
-                                if currentKey == .clear {
-                                    buttons[0][0] = .clearAll
-                                }
+                                keyDidTap()
                             }
                         }.padding(.bottom, 3)
                     }
@@ -93,13 +87,120 @@ struct ContentView: View {
         }
     }
 
+    func numberDidTap() {
+        let value = currentKey!.rawValue
+
+        if currentOperator == nil {
+            if hasResult {
+                result = value
+                hasResult = false
+            } else {
+                result += value
+            }
+
+            firstOperand = Double(result)!
+        } else {
+            if hasResult {
+                currentOperator = nil
+                hasResult = false
+                result = value
+
+                firstOperand = Double(result)!
+            } else {
+                if secondOperand.isZero {
+                    result = value
+                } else {
+                    result += value
+                }
+
+                secondOperand = Double(result)!
+            }
+        }
+
+        result = Double(result)!.removeTraillingZeros().description
+    }
+
+    func operatorDidTap() {
+        if hasResult {
+            secondOperand = 0.0
+            hasResult = false
+        } else {
+            if !secondOperand.isZero {
+                result = Calculator.eval(
+                    firstOperand: firstOperand,
+                    secondOperand: secondOperand,
+                    opr: currentOperator
+                )
+                .removeTraillingZeros()
+                .description
+
+                firstOperand = Double(result)!
+                secondOperand = 0.0
+            }
+        }
+
+        currentOperator = Operator(rawValue: currentKey!.rawValue)
+    }
+
+    func plusMinusDidTap() {
+        result = Calculator
+            .toggleSign(operand: Double(result)!)
+            .removeTraillingZeros()
+            .description
+    }
+
+    func clearDidTap() {
+        result = "0"
+        firstOperand = 0.0
+        secondOperand = 0.0
+        currentOperator = nil
+        buttons[0][0] = .clearAll
+    }
+
+    func keyDidTap() {
+        switch currentKey {
+            case .clear,
+                 .clearAll:
+                clearDidTap()
+            case .dot:
+                dotDidTap()
+            case .plusMinus:
+                plusMinusDidTap()
+            case .opr:
+                operatorDidTap()
+            case .equal:
+                equalDidTap()
+            default:
+                numberDidTap()
+        }
+    }
+
+    func dotDidTap() {
+        if !result.contains(".") {
+            result += "."
+        }
+    }
+
+    func equalDidTap() {
+        let value = Calculator.eval(
+            firstOperand: firstOperand,
+            secondOperand: secondOperand,
+            opr: currentOperator
+        )
+
+        result = value.removeTraillingZeros().description
+        firstOperand = value
+        hasResult = true
+    }
+
     // MARK: Private
 
     @State private var currentKey: KeyPad?
     @State private var currentOperator: Operator?
-    @State private var result = "0"
-    @State private var firstOperand = 0.0
-    @State private var secondOperand = 0.0
+    @State private var result: String = "0"
+    @State private var hasResult: Bool = false
+    @State private var firstOperand: Double = 0.0
+    @State private var secondOperand: Double = 0.0
     @State private var buttons: [[KeyPad]] = [
         [.clearAll, .plusMinus, .opr(.mod), .opr(.div)],
         [.seven, .eight, .nine, .opr(.mul)],
